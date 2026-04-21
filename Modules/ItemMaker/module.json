@@ -1,0 +1,11 @@
+{
+    "name": "ItemMaker",
+    "alias": "itemmaker",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ItemMaker\\Providers\\ItemMakerServiceProvider"
+    ],
+    "files": []
+}

@@ -1,0 +1,11 @@
+{
+    "name": "OrderInvoice",
+    "alias": "orderinvoice",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\OrderInvoice\\Providers\\OrderInvoiceServiceProvider"
+    ],
+    "files": []
+}

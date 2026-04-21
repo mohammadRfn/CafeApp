@@ -1,0 +1,7 @@
+{
+    "Inventory": true,
+    "ItemMaker": true,
+    "Shop": true,
+    "OrderInvoice": true,
+    "UserCreator": true
+}
