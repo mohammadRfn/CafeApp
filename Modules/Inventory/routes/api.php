@@ -6,7 +6,7 @@ use Modules\Inventory\Http\Controllers\PriceController;
 use Modules\Inventory\Http\Controllers\StockManagementController;
 use Modules\Inventory\Http\Controllers\ReportingController;
 
-Route::middleware(['auth:api', 'role:admin'])->prefix('v1/inventory')->name('inventory.')->group(function () {
+Route::middleware(['auth:api', 'role:admin,seniorBartisa'])->prefix('v1/inventory')->name('inventory.')->group(function () {
 
     Route::middleware('throttle:60,1')->group(function () {
         Route::post('transactions', [InventoryTransactionController::class, 'createTransaction'])

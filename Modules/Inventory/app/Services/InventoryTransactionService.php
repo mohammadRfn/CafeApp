@@ -47,7 +47,7 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
                         'total_sell_value' => round(($stock ? $stock->quantity_grams : 0) * $price['sell_price'], 0),
                         'profit_potential' => round(
                             (($stock ? $stock->quantity_grams : 0) * $price['sell_price']) -
-                            (($stock ? $stock->quantity_grams : 0) * $price['buy_price']),
+                                (($stock ? $stock->quantity_grams : 0) * $price['buy_price']),
                             0
                         ),
                     ];
@@ -100,7 +100,7 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
             ->where('unit_id', 21) // واحد گرم
             ->where(function ($query) {
                 $query->whereNull('valid_until')
-                      ->orWhere('valid_until', '>=', now());
+                    ->orWhere('valid_until', '>=', now());
             })
             ->orderBy('valid_from', 'desc')
             ->first();
@@ -118,7 +118,7 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
         $price = PriceHistory::where('box_id', $boxId)
             ->where(function ($query) {
                 $query->whereNull('valid_until')
-                      ->orWhere('valid_until', '>=', now());
+                    ->orWhere('valid_until', '>=', now());
             })
             ->orderBy('valid_from', 'desc')
             ->first();
@@ -154,7 +154,7 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
     public function rollbackTransaction(string $entityType, int $transactionId): bool
     {
         return DB::transaction(function () use ($entityType, $transactionId) {
-            $transaction = match($entityType) {
+            $transaction = match ($entityType) {
                 'ingredient' => IngredientTransaction::lockForUpdate()->find($transactionId),
                 'box' => BoxTransaction::lockForUpdate()->find($transactionId),
                 default => throw new \Exception('Invalid entity type: ' . $entityType)
@@ -164,13 +164,13 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
                 throw new \Exception('Transaction not found');
             }
 
-            $oppositeEffect = match($entityType) {
+            $oppositeEffect = match ($entityType) {
                 'ingredient' => -$transaction->grams_effect,
                 'box' => -$transaction->quantity_effect,
                 default => 0
             };
 
-            match($entityType) {
+            match ($entityType) {
                 'ingredient' => IngredientStock::where('ingredient_id', $transaction->ingredient_id)
                     ->update([
                         'quantity_grams' => DB::raw("quantity_grams + {$oppositeEffect}"),
@@ -240,9 +240,9 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
             $validatedData['entity_code'] = $entityInfo['code'] ?? 'N/A';
         }
 
-        return RateLimiter::attempt('inventory-tx-'.Auth::id(), 100, function () use ($validatedData, $entityType, $entityId) {
+        return RateLimiter::attempt('inventory-tx-' . Auth::id(), 100, function () use ($validatedData, $entityType, $entityId) {
             return DB::transaction(function () use ($validatedData, $entityType, $entityId) {
-                $stock = match($entityType) {
+                $stock = match ($entityType) {
                     'ingredient' => $this->handleIngredientStock($entityId, $validatedData),
                     'box' => $this->handleBoxStock($entityId, $validatedData),
                     default => throw new \Exception('Invalid entity_type: ' . $entityType)
@@ -251,7 +251,7 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
                 $transaction = $this->createTransactionRecord($validatedData, $entityType, $entityId);
                 $this->dispatchJobs($validatedData, $entityType, $entityId);
                 $this->flushRelevantCache($entityType, $entityId);
-                return match($entityType) {
+                return match ($entityType) {
                     'ingredient' => $transaction->load('ingredient'),
                     'box' => $transaction->load('box'),
                     default => $transaction
@@ -262,7 +262,7 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
 
     private function getEntityInfo(string $entityType, int $entityId): array
     {
-        return match($entityType) {
+        return match ($entityType) {
             'ingredient' => Ingredient::select('ingredient_name as name', 'ingredient_code as code')
                 ->findOrFail($entityId)
                 ->only(['name', 'code']),
@@ -295,7 +295,7 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
 
         if ($newQuantity < 0 && $data['transaction_type'] !== 'adjustment') {
             throw ValidationException::withMessages([
-                'quantity' => 'Insufficient stock: only '.$stock->available_grams.'g available'
+                'quantity' => 'Insufficient stock: only ' . $stock->available_grams . 'g available'
             ]);
         }
 
@@ -318,7 +318,7 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
 
         if ($newQuantity < 0 && $data['transaction_type'] !== 'adjustment') {
             throw ValidationException::withMessages([
-                'quantity' => 'Insufficient box stock: only '.$stock->available_quantity.' units available'
+                'quantity' => 'Insufficient box stock: only ' . $stock->available_quantity . ' units available'
             ]);
         }
 
@@ -342,7 +342,7 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
             unset($transactionData['entity_name'], $transactionData['entity_code']);
         }
 
-        return match($entityType) {
+        return match ($entityType) {
             'ingredient' => IngredientTransaction::create($transactionData),
             'box' => BoxTransaction::create($transactionData),
             default => throw new \Exception('Cannot create transaction for: ' . $entityType)
@@ -360,7 +360,6 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
             Cache::forget('transactions:all');
             Cache::forget('boxes:all');
             Cache::forget('box_stock:all');
-
         } catch (\Exception $e) {
             \Log::warning('Cache flush failed: ' . $e->getMessage());
         }
@@ -370,13 +369,13 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
     public function bulkTransactions(array $transactions): Collection
     {
         $validatedTransactions = collect($transactions)->map(
-            fn ($data) =>
+            fn($data) =>
             $this->validateTransactionData($data)
         );
 
         return DB::transaction(function () use ($validatedTransactions) {
             return $validatedTransactions->map(
-                fn ($data) =>
+                fn($data) =>
                 $this->createTransaction($data->toArray())
             );
         });
@@ -404,7 +403,9 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
                 $tx->update(['status' => 'committed']);
             }
 
-            Cache::tags(['ingredients', 'stock', 'analytics'])->flush();
+            Cache::forget('ingredients:list:all');
+            Cache::forget('stock:all');
+            Cache::forget('analytics:all');
             return true;
         });
     }
@@ -419,14 +420,10 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
                 'reorder_point' => $data['reorder_point'] ?? 0
             ]);
 
-            if (config('cache.default') === 'redis' || config('cache.default') === 'memcached') {
-                Cache::tags(['ingredients'])->flush();
-            } else {
-                Cache::forget('ingredients:all');
-            }
+            Cache::forget('ingredients:list:all');
+            Cache::forget('ingredients:all');
 
             return $ingredient->load('units');
-
         });
     }
 
@@ -440,18 +437,14 @@ class InventoryTransactionService implements InventoryTransactionServiceInterfac
                     'available_grams' => $quantityGrams,
                     'reserved_grams' => 0,
                     'avg_cost_per_gram' => $costPerGram,
-                    'last_updated' => now() ,
+                    'last_updated' => now(),
                 ]
             );
 
-            try {
-                Cache::tags(['stock', 'ingredients'])->flush();
-            } catch (\Exception $e) {
-                Cache::forget('stock:all');
-            }
+            Cache::forget('stock:all');
+            Cache::forget('ingredients:list:all');
 
             return $stock->load('ingredient');
-
         });
     }
 
