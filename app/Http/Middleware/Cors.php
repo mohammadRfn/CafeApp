@@ -16,19 +16,23 @@ class Cors
      */
     public function handle(Request $request, Closure $next)
     {
-        $response = $next($request);
+        $origin = $this->getAllowOriginHeader($request);
 
-        $response->headers->set('Access-Control-Allow-Origin', $this->getAllowOriginHeader($request));
+        if ($request->getMethod() === "OPTIONS") {
+            return response('', 200)
+                ->header('Access-Control-Allow-Origin', $origin)
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+                ->header('Access-Control-Allow-Credentials', 'true')
+                ->header('Access-Control-Max-Age', 3600);
+        }
+
+        $response = $next($request);
+        $response->headers->set('Access-Control-Allow-Origin', $origin);
         $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-        $response->headers->set('Access-Control-Allow-Credentials', 'true');  
-        $response->headers->set('Access-Control-Max-Age', 3600);  
-
-        if ($request->getMethod() == "OPTIONS") {
-            return response('', 200)
-                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-        }
+        $response->headers->set('Access-Control-Allow-Credentials', 'true');
+        $response->headers->set('Access-Control-Max-Age', 3600);
 
         return $response;
     }
@@ -41,13 +45,13 @@ class Cors
     protected function getAllowOriginHeader(Request $request)
     {
         $allowedOrigins = [
-            'https://annaponsprojects.com', 
+            'https://annaponsprojects.com',
             'http://localhost:5173',
             'http://localhost:3000',
         ];
 
         $origin = $request->headers->get('Origin');
-        
+
         $allowedPatterns = [
             '/^https?:\/\/([a-z0-9-]+\.)?annaponsprojects\.com$/',
         ];
@@ -65,4 +69,3 @@ class Cors
         return '*';
     }
 }
-
